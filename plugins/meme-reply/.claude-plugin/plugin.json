@@ -1,0 +1,11 @@
+{
+  "name": "meme-reply",
+  "description": "Stop hook que muestra un meme aleatorio como link clicable al final de cada respuesta",
+  "version": "1.0.0",
+  "author": {
+    "name": "Jesús Lorenzo"
+  },
+  "homepage": "https://github.com/Zarritas/meme-skill",
+  "repository": "https://github.com/Zarritas/meme-skill",
+  "license": "MIT"
+}

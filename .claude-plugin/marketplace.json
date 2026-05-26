@@ -1,0 +1,19 @@
+{
+  "name": "meme-skill",
+  "description": "Marketplace de un único plugin (meme-reply) que añade un Stop hook con meme aleatorio como link clicable al final de cada respuesta de Claude Code",
+  "owner": {
+    "name": "Jesús Lorenzo"
+  },
+  "plugins": [
+    {
+      "name": "meme-reply",
+      "source": "./plugins/meme-reply",
+      "description": "Stop hook que muestra un meme aleatorio como link clicable al final de cada respuesta",
+      "version": "1.0.0",
+      "author": {
+        "name": "Jesús Lorenzo"
+      },
+      "license": "MIT"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
-# meme-reply
+# meme-skill
 
-Hook `Stop` para [Claude Code](https://docs.claude.com/en/docs/claude-code) que, cuando Claude termina de responder, descarga un meme aleatorio de [meme-api.com](https://meme-api.com) y muestra su título como **link clicable** al meme original.
+Marketplace de [Claude Code](https://docs.claude.com/en/docs/claude-code) con un único plugin: **meme-reply**, un hook `Stop` que muestra un meme aleatorio como link clicable al final de cada respuesta.
 
 ```
 📷 [The most confusing rabbithole I stumbled upon a while back.](https://i.redd.it/...)
@@ -8,45 +8,69 @@ Hook `Stop` para [Claude Code](https://docs.claude.com/en/docs/claude-code) que,
 
 ## Instalación
 
-```bash
-git clone https://github.com/Zarritas/meme-skill ~/.claude/skills/meme-reply
-bash ~/.claude/skills/meme-reply/install.sh
+Desde Claude Code:
+
+```
+/plugin marketplace add Zarritas/meme-skill
+/plugin install meme-reply@meme-skill
 ```
 
-Después **reinicia Claude Code** o abre una sesión nueva.
+Reinicia Claude Code o abre nueva sesión. A partir de ahí, al final de cada respuesta verás un link al meme.
 
 ## Desinstalación
 
-```bash
-bash ~/.claude/skills/meme-reply/uninstall.sh
+```
+/plugin uninstall meme-reply@meme-skill
+/plugin marketplace remove meme-skill
+```
+
+## Actualización
+
+```
+/plugin marketplace update meme-skill
 ```
 
 ## Cómo funciona
 
-1. Claude Code dispara el evento `Stop` al terminar de responder.
+1. Claude Code dispara `Stop` al terminar de responder.
 2. `meme_hook.py` hace `GET https://meme-api.com/gimme`.
-3. Emite `{"systemMessage": "📷 [título](url)"}` que Claude Code renderiza como link.
-4. Si la API falla → emoticon de fallback. Nunca bloquea Claude (todos los errores se tragan con `exit 0`).
+3. Emite `{"systemMessage": "📷 [título](url)"}` → Claude Code renderiza el link.
+4. Si la API falla → emoticon de fallback. Nunca bloquea Claude (`exit 0`).
 
 ## Requisitos
 
+- Claude Code reciente (con soporte de `/plugin`).
 - Python 3.10+ (solo stdlib).
-- Conexión a internet.
+- Conexión a internet para `meme-api.com`.
+
+## Estructura del repo
+
+```
+meme-skill/
+├── .claude-plugin/
+│   └── marketplace.json        # catálogo del marketplace
+└── plugins/
+    └── meme-reply/
+        ├── .claude-plugin/
+        │   └── plugin.json     # manifest del plugin
+        ├── hooks/
+        │   └── hooks.json      # registra el Stop hook
+        ├── skills/
+        │   └── meme-reply/
+        │       └── SKILL.md    # skill informativa
+        └── meme_hook.py        # script del hook
+```
 
 ## ¿Por qué no muestra el meme como imagen?
 
-Porque el chat de Claude Code renderiza `systemMessage` como **texto markdown**, no como stream raw al terminal. Eso descarta:
+El renderer del chat de Claude Code trata `systemMessage` como **texto markdown**, no como stream raw al terminal. Eso descarta:
 
-- **Protocolos de imagen inline** (Kitty graphics, Sixel, iTerm2): los `systemMessage` no pasan al terminal subyacente, se renderizan dentro del chat.
-- **ASCII art** (color o mono): aunque ANSI básico sí pasa por algún canal, el `systemMessage` tiene límite de tamaño (~10–30KB). Un meme convertido a half-blocks color pesa ~70KB → se redirige a archivo. Mono cabría pero la calidad visual es pobre.
+- **Protocolos de imagen inline** (Kitty graphics, Sixel, iTerm2): el `systemMessage` no llega al terminal subyacente.
+- **ASCII art grande** (color half-blocks o Kitty base64): los mensajes mayores de ~30KB se redirigen a archivo en lugar de mostrarse en el chat.
 
-→ La opción robusta es **link**: pequeño, clicable, siempre funciona.
+→ La opción robusta es el **link**: pequeño, clicable, siempre funciona.
 
-## Ficheros
-
-- `meme_hook.py` — script del hook (Python stdlib, sin dependencias).
-- `install.sh` / `uninstall.sh` — registro idempotente en `~/.claude/settings.json`.
-- `SKILL.md` — descripción para Claude Code (invocable como skill).
+Versiones anteriores con ASCII mono/color/Kitty están en el historial de git si te interesan.
 
 ## Licencia
 
