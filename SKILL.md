@@ -1,6 +1,6 @@
 ---
 name: meme-reply
-description: Instala/desinstala un hook Stop que, al terminar cada respuesta de Claude Code, baja un meme aleatorio de meme-api.com y lo muestra convertido a ASCII como systemMessage. Úsala cuando el usuario pida activar, desactivar, instalar, quitar, configurar o testear el hook de memes.
+description: Instala/desinstala un hook Stop que, al terminar cada respuesta de Claude Code, baja un meme aleatorio de meme-api.com y muestra su título como link clicable al meme original. Úsala cuando el usuario pida activar, desactivar, instalar, quitar o testear el hook de memes.
 tools: Bash, Read
 model: sonnet
 permissionMode: default
@@ -8,20 +8,17 @@ permissionMode: default
 
 # meme-reply
 
-Hook `Stop` que decora cada turno de Claude Code con un meme aleatorio en ASCII.
+Hook `Stop` que decora cada turno de Claude Code con un meme aleatorio (título + link clicable a la imagen original).
 
 ## Cómo funciona
 
 - Al terminar de responder, Claude Code dispara `Stop` y llama a `meme_hook.py`.
-- El script hace `GET https://meme-api.com/gimme` (meme aleatorio).
-- Si **Pillow** está instalado → descarga la imagen y la convierte a ASCII (60 cols, rampa ` .:-=+*#%@`).
-- Si no → muestra el título del meme + un emoticon de fallback + URL.
-- Emite `{"systemMessage": "<ascii>"}` → Claude Code lo renderiza al usuario.
-- Cualquier error se traga silenciosamente con `exit 0` (nunca bloquea Claude).
+- `GET https://meme-api.com/gimme` → URL + título.
+- Emite `{"systemMessage": "📷 [título](url)"}` → link clicable en el chat.
+- Todos los errores se tragan con `exit 0` → nunca bloquea Claude.
+- Solo Python stdlib, sin dependencias externas.
 
 ## Acciones soportadas
-
-Cuando se invoque la skill, el usuario suele querer una de estas operaciones. Ejecuta solo la pedida.
 
 ### Instalar
 
@@ -29,11 +26,7 @@ Cuando se invoque la skill, el usuario suele querer una de estas operaciones. Ej
 bash ~/.claude/skills/meme-reply/install.sh
 ```
 
-- Merge idempotente del hook en `~/.claude/settings.json` (preserva el resto).
-- Intenta `pip install --user Pillow` (silencioso si falla — el hook tiene fallback).
-- Flag `--no-pillow` para saltarse la instalación de Pillow.
-
-Tras instalar avisa al usuario: **hay que reiniciar Claude Code o abrir nueva sesión** para que cargue los hooks.
+Merge idempotente en `~/.claude/settings.json` (preserva el resto). Tras instalar, **reinicia Claude Code** o abre nueva sesión.
 
 ### Desinstalar
 
@@ -41,40 +34,31 @@ Tras instalar avisa al usuario: **hay que reiniciar Claude Code o abrir nueva se
 bash ~/.claude/skills/meme-reply/uninstall.sh
 ```
 
-Quita la entrada del hook de `settings.json`. No desinstala Pillow.
-
 ### Probar sin instalar
 
 ```bash
-echo '{"session_id":"x","transcript_path":"/tmp/x","cwd":"'$PWD'","permission_mode":"default","hook_event_name":"Stop"}' \
-  | python3 ~/.claude/skills/meme-reply/meme_hook.py
+echo '{}' | python3 ~/.claude/skills/meme-reply/meme_hook.py
 ```
 
-Debe imprimir un JSON con `systemMessage` que contiene el ASCII (o el fallback).
+Debe imprimir un JSON con `systemMessage` que contenga `📷 [título](url)`.
 
 ### Ver estado
 
 ```bash
 python3 -c "import json; d=json.load(open('$HOME/.claude/settings.json')); \
 print([h for g in d.get('hooks',{}).get('Stop',[]) for h in g.get('hooks',[]) \
-       if h.get('command','').endswith('meme_hook.py')])"
+       if 'meme_hook.py' in h.get('command','')])"
 ```
 
 Lista vacía → no instalado. Lista con un dict → instalado.
 
 ## Ficheros
 
-- `meme_hook.py` — el script del hook (Python stdlib + Pillow opcional).
-- `install.sh` — registra el hook + instala Pillow.
-- `uninstall.sh` — desregistra el hook.
+- `meme_hook.py` — script del hook (stdlib).
+- `install.sh` — registra en `settings.json`.
+- `uninstall.sh` — desregistra.
 
-## Portabilidad
+## Notas
 
-- Solo requiere `python3` (stdlib). Pillow es opcional.
-- Path absoluto del hook se resuelve en `install.sh` con `$HOME` del usuario que lo ejecuta → válido para cualquier cuenta.
-- No requiere root (instala Pillow con `pip --user`).
-
-## Cuándo NO usarla
-
-- Si el usuario quiere personalizar el origen del meme (carpeta local, otra API), avisa de que la skill actualmente usa solo `meme-api.com` y hay que editar `MEME_API` en `meme_hook.py`.
-- Si el usuario quiere mapeo según contenido de la respuesta (no random), avisa de que esa decisión se rechazó al diseñar y habría que reabrirla.
+- No muestra la imagen del meme directamente. El renderer del chat trata `systemMessage` como texto markdown, no permite imágenes inline (ni Kitty graphics ni ASCII grande). La opción robusta es **link**.
+- Si el usuario quiere recuperar versiones anteriores con ASCII/color/Kitty, están en el historial de git del repo.
