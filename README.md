@@ -7,7 +7,7 @@ Hook `Stop` de [Claude Code](https://docs.claude.com/en/docs/claude-code) que, c
 ## Instalación
 
 ```bash
-git clone <URL_DEL_REPO> ~/.claude/skills/meme-reply
+git clone https://github.com/Zarritas/meme-skill ~/.claude/skills/meme-reply
 bash ~/.claude/skills/meme-reply/install.sh
 ```
 
