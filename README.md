@@ -33,7 +33,9 @@ Variables de entorno (configurables en la entry del hook):
 | Var | Default | Efecto |
 |-----|---------|--------|
 | `MEME_COLOR` | `0` | `1` activa half-blocks unicode + truecolor ANSI (mucho mejor visual, requiere terminal con truecolor). |
-| `MEME_WIDTH` | `80` | Ancho en columnas. |
+| `MEME_KITTY` | `0` | `1` emite la imagen original vía [Kitty graphics protocol](https://sw.kovidgoyal.net/kitty/graphics-protocol/). Pixel-perfect en terminales que lo soporten (kitty, ghostty, WezTerm). **No funciona como hook de Claude Code**: el renderer del chat strippea las secuencias APC. Útil si lanzas el script con otro launcher o lo redirijes a un archivo y haces `cat`. |
+| `MEME_KITTY_MAX_W` | `800` | Ancho máximo en píxeles cuando `MEME_KITTY=1`. |
+| `MEME_WIDTH` | `80` | Ancho en columnas (modos `MEME_COLOR` y mono). |
 | `MEME_MAX_ROWS` | `45` | Filas máximas (limita el tamaño del bloque). |
 | `MEME_INVERT` | `auto` | `auto`/`on`/`off`. Para terminal con fondo claro usa `on`. |
 

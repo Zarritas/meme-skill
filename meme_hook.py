@@ -26,6 +26,8 @@ MAX_ROWS = int(os.environ.get("MEME_MAX_ROWS", "45"))
 ASPECT = 2.2  # alto/ancho de una celda de terminal típica
 HTTP_TIMEOUT = 4  # segundos
 COLOR_MODE = os.environ.get("MEME_COLOR", "0") == "1"
+KITTY_MODE = os.environ.get("MEME_KITTY", "0") == "1"
+KITTY_MAX_W = int(os.environ.get("MEME_KITTY_MAX_W", "800"))
 # auto: invierte la rampa si el meme tiene fondo claro (terminal oscuro)
 # off: nunca invierte. on: siempre invierte (terminal con fondo claro).
 INVERT_MODE = os.environ.get("MEME_INVERT", "auto").lower()
@@ -207,7 +209,59 @@ def _image_to_ascii_color(image_bytes: bytes) -> str | None:
         return None
 
 
+def _image_to_kitty(image_bytes: bytes) -> str | None:
+    """Genera secuencia Kitty graphics protocol (compatible con ghostty).
+
+    Refs: https://sw.kovidgoyal.net/kitty/graphics-protocol/
+    Formato: \x1b_G<options>;<base64>\x1b\\  (chunked si > 4096 bytes b64).
+    """
+    import base64
+
+    try:
+        from PIL import Image  # type: ignore
+        import io
+    except ImportError:
+        # Sin Pillow: enviamos bytes raw asumiendo que ya son PNG.
+        png_bytes = image_bytes
+    else:
+        try:
+            img = Image.open(io.BytesIO(image_bytes))
+            if img.mode in ("RGBA", "LA"):
+                pass  # PNG con alfa, se mantiene
+            else:
+                img = img.convert("RGB")
+            # Limitar ancho para no inundar el chat.
+            if img.width > KITTY_MAX_W:
+                ratio = KITTY_MAX_W / img.width
+                img = img.resize(
+                    (KITTY_MAX_W, int(img.height * ratio)), Image.LANCZOS
+                )
+            buf = io.BytesIO()
+            img.save(buf, format="PNG")
+            png_bytes = buf.getvalue()
+        except Exception:
+            return None
+
+    b64 = base64.b64encode(png_bytes).decode("ascii")
+    chunk_size = 4096
+    chunks = [b64[i : i + chunk_size] for i in range(0, len(b64), chunk_size)]
+    if not chunks:
+        return None
+
+    parts: list[str] = []
+    if len(chunks) == 1:
+        parts.append(f"\x1b_Gf=100,a=T;{chunks[0]}\x1b\\")
+    else:
+        parts.append(f"\x1b_Gf=100,a=T,m=1;{chunks[0]}\x1b\\")
+        for chunk in chunks[1:-1]:
+            parts.append(f"\x1b_Gm=1;{chunk}\x1b\\")
+        parts.append(f"\x1b_Gm=0;{chunks[-1]}\x1b\\")
+    return "".join(parts)
+
+
 def image_to_ascii(image_bytes: bytes) -> str | None:
+    if KITTY_MODE:
+        return _image_to_kitty(image_bytes)
     if COLOR_MODE:
         return _image_to_ascii_color(image_bytes)
     return _image_to_ascii_mono(image_bytes)
@@ -241,9 +295,8 @@ def main() -> None:
         )
         return
 
-    # En modo color no envolvemos en code-block: las secuencias ANSI deben
-    # llegar tal cual al terminal para que se rendericen.
-    if COLOR_MODE:
+    # Color y Kitty deben llegar como bytes crudos al terminal: sin code-block.
+    if COLOR_MODE or KITTY_MODE:
         emit(f"📷 {title}\n{ascii_art}")
     else:
         emit(f"📷 {title}\n```\n{ascii_art}\n```")
