@@ -33,9 +33,28 @@ Reinicia Claude Code o abre nueva sesión. A partir de ahí, al final de cada re
 ## Cómo funciona
 
 1. Claude Code dispara `Stop` al terminar de responder.
-2. `meme_hook.py` hace `GET https://meme-api.com/gimme`.
+2. `meme_hook.py` detecta el idioma (ver abajo) y hace `GET https://meme-api.com/gimme/<subreddit>` eligiendo aleatoriamente un subreddit del idioma.
 3. Emite `{"systemMessage": "📷 [título](url)"}` → Claude Code renderiza el link.
-4. Si la API falla → emoticon de fallback. Nunca bloquea Claude (`exit 0`).
+4. Si la API falla → reintenta con el endpoint genérico, y si falla del todo, emoticon de fallback. Nunca bloquea Claude (`exit 0`).
+
+## Idiomas soportados
+
+| Código | Subreddits |
+|--------|-----------|
+| `en` | memes, dankmemes, wholesomememes, me_irl |
+| `es` | MemesEnEspanol, mexicomemes, yo_ELVR, chistes, redditores, ArgentinaBenderStyle, spanishmeme |
+| `pt` | brasil, portugalcaralho, HUEstation, memesbrasil |
+| `fr` | Rance |
+| `de` | ich_iel, okoidawappler |
+| `it` | italy, Italia |
+
+**Detección de idioma** (en orden de prioridad):
+
+1. Variable de entorno `MEME_LANG` (acepta `en`, `es`, `pt`, `fr`, `de`, `it`, o nombres como `Español`, `Français`, etc.).
+2. Campo `language` de `~/.claude/settings.json` (lo que ya usas para Claude Code).
+3. Default: `en`.
+
+Para forzar un idioma, edita el `hooks/hooks.json` del plugin después de instalarlo, o setea `MEME_LANG` en tu shell antes de lanzar Claude.
 
 ## Requisitos
 

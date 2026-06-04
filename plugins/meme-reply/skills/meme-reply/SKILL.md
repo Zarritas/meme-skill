@@ -13,10 +13,15 @@ Este plugin añade un hook `Stop` que, al terminar cada respuesta de Claude Code
 ## Cómo funciona
 
 - Claude Code dispara el evento `Stop` al terminar de responder.
-- El hook (`meme_hook.py`) hace `GET https://meme-api.com/gimme`.
+- El hook detecta idioma (`MEME_LANG` → `language` de settings.json → `en`) y elige un subreddit aleatorio de la lista de ese idioma.
+- `GET https://meme-api.com/gimme/<subreddit>` → si falla, reintento con endpoint genérico.
 - Emite `{"systemMessage": "📷 [título](url)"}` que Claude Code renderiza como link.
 - Todos los errores se tragan con `exit 0` → nunca bloquea Claude.
 - Solo Python stdlib, sin dependencias externas.
+
+### Idiomas
+
+Soportados: `en`, `es`, `pt`, `fr`, `de`, `it`. Configurables con la variable de entorno `MEME_LANG` (también acepta nombres como `Español`, `Français`). Por defecto se detecta del `language` de tu `~/.claude/settings.json`.
 
 ## Acciones
 
